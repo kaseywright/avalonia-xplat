@@ -1,14 +1,15 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Data.Core;
 using Avalonia.Data.Core.Plugins;
 using Avalonia.Markup.Xaml;
+using AvaloniaXplat.Services;
 using AvaloniaXplat.ViewModels;
 using AvaloniaXplat.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AvaloniaXplat;
 
-public partial class App : Application
+public class App : Application
 {
     public override void Initialize()
     {
@@ -17,6 +18,11 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var services = new ServiceCollection();
+        RegisterServices(services);
+        var serviceProvider = services.BuildServiceProvider();
+        
+        var mainViewModel = serviceProvider.GetRequiredService<MainViewModel>();
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             // Line below is needed to remove Avalonia data validation.
@@ -24,17 +30,24 @@ public partial class App : Application
             BindingPlugins.DataValidators.RemoveAt(0);
             desktop.MainWindow = new MainWindow
             {
-                DataContext = new MainViewModel()
+                DataContext = mainViewModel
             };
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
             singleViewPlatform.MainView = new MainView
             {
-                DataContext = new MainViewModel()
+                DataContext = mainViewModel
             };
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static void RegisterServices(IServiceCollection services)
+    {
+        services.AddSingleton<IRepository, Repository>();
+        services.AddSingleton<IBusinessService, BusinessService>();
+        services.AddTransient<MainViewModel>();
     }
 }
